@@ -1,0 +1,9 @@
+[submodule "Capture/dependencies/nlohmann_json"]
+	path = DataCollection/FlirCapturer/dependencies/nlohmann_json
+	url = https://github.com/nlohmann/json.git
+[submodule "Capture/dependencies/JETGPIO"]
+	path = DataCollection/FlirCapturer/dependencies/JETGPIO
+	url = https://github.com/Rubberazer/JETGPIO.git
+[submodule "normalizing-flows"]
+	path = normalizing-flows
+	url = https://github.com/VincentStimper/normalizing-flows.git

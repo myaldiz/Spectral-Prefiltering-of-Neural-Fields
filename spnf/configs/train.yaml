@@ -1,0 +1,93 @@
+defaults:
+  - _self_
+
+task_name: spnf-oia
+
+data:
+  _target_: spnf.data.GridField
+  grid:
+    _target_: spnf.data.load_image
+    path: ${paths.dataset_dir}/picture/oia.tiff
+    resize: null
+  bounds: 1.2
+  padding_mode: reflection
+
+model:
+  _target_: spnf.model.SPNFModel
+  input_dim: 2
+  output_dim: 3
+  encoder:
+    _target_: spnf.encoding.SPNFExactFourierEncoding
+    coords: ${model.input_dim}
+    embed: 1024
+    length_distribution_param: 2000
+  mlp:
+    _target_: spnf.model.MLP
+    input_dim: ${model.encoder.embed}
+    output_dim: ${model.output_dim}
+    hidden_dim: 1024
+    num_layers: 3
+
+optimizer:
+  _target_: torch.optim.Adam
+  lr: 5e-4
+  weight_decay: 0.0
+
+scheduler:
+  _target_: torch.optim.lr_scheduler.LambdaLR
+  lr_lambda: 
+    _target_: spnf.utils.WarmUpScheduler
+    end_warm: 100
+    curve: exponential
+    end_iter: ${trainer.steps}
+    decay_start: 10000
+    min_val: 0.001
+
+trainer:
+  steps: 10000
+  batch_size: 100000
+  checkpoint_dir: ${paths.output_dir}/checkpoints
+  log_dir: ${paths.output_dir}/visualizations
+  compile_train_step: true
+  seed: 42
+  perturb_coords: gaussian
+  covariance_eigenvalue_logrange: [-12.0, 2.0]
+
+
+# Tensorboard config
+tensorboard:
+  _target_: torch.utils.tensorboard.SummaryWriter
+  log_dir: ${paths.output_dir}/tensorboard
+
+# Paths
+paths:
+  # path to data directory
+  data_dir: /home/myaldiz/Data
+
+  # path to dataset directory
+  dataset_dir: ${paths.data_dir}/Datasets/ngssf
+
+  # path to logging directory
+  log_dir: ${paths.data_dir}/Experiments/spnf/
+
+  # path to output directory, created dynamically by hydra
+  # path generation pattern is specified in `configs/hydra/default.yaml`
+  # use it to store all files generated during the run, like ckpts and metrics
+  output_dir: ${hydra:runtime.output_dir}
+
+# Hydra logging configuration
+hydra:
+  defaults:
+    - override hydra_logging: colorlog
+    - override job_logging: colorlog
+  run:
+    dir: ${paths.log_dir}/${task_name}
+  sweep:
+    dir: ${paths.log_dir}/${task_name}_multiruns/${now:%Y-%m-%d}_${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+
+  job_logging:
+    handlers:
+      file:
+        # Incorporates fix from https://github.com/facebookresearch/hydra/pull/2242
+        filename: ${hydra.runtime.output_dir}/${task_name}.log
