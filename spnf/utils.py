@@ -43,7 +43,7 @@ def to_py(t):
                 return t.item() if t.numel() == 1 else t.tolist()
             return t
 
-
+@torch.no_grad()
 def make_coord_grid(ndim: int, 
                     resolution: Union[int, Sequence[int]], 
                     bounds: Union[float, Sequence[float]]=1.0, 
@@ -113,6 +113,49 @@ def save_image(tensor: torch.Tensor, path: Path) -> None:
     data = ((data + 1.0) * 0.5).clip(0, 1)
     data = (data * 255).byte().numpy()
     iio.imwrite(path, data)
+    
+
+def interpolate_covariance_matrices_numpy(times, params):
+    """
+    Interpolates covariance matrices, eigenvalues, and eigenvectors.
+    Detects 1D/2D/3D based on input shape. Returns numpy arrays (float64).
+    """
+    times = np.asarray(times)
+    frames = np.arange(int(times.max()) + 1)
+    
+    # Vectorized interpolation for all parameters
+    p = np.stack([np.interp(frames, times, col) for col in params.T], axis=-1)
+    dim = {1: 1, 3: 2, 6: 3}[p.shape[1]]
+
+    # Eigenvalues (Variances): 10^log_var
+    eigvals = 10.0 ** p[:, -dim:]
+
+    # Eigenvectors (Rotation Matrix Columns)
+    if dim == 1:
+        eigvecs = np.ones((len(frames), 1, 1))
+    elif dim == 2:
+        rads = p[:, 0] * 2 * np.pi
+        c, s = np.cos(rads), np.sin(rads)
+        # 2D Rotation: [[cos, -sin], [sin, cos]]
+        eigvecs = np.moveaxis(np.array([[c, -s], [s, c]]), 2, 0)
+    else:
+        rads = p[:, :3] * 2 * np.pi
+        c, s = np.cos(rads), np.sin(rads)
+        cx, cy, cz = c[:, 0], c[:, 1], c[:, 2]
+        sx, sy, sz = s[:, 0], s[:, 1], s[:, 2]
+        
+        # 3D Rotation (Yaw-Pitch-Roll): Rz(az) @ Ry(ay) @ Rx(ax)
+        eigvecs = np.stack([
+            np.stack([cz*cy, cz*sy*sx - sz*cx, cz*sy*cx + sz*sx], -1),
+            np.stack([sz*cy, sz*sy*sx + cz*cx, sz*sy*cx - cz*sx], -1),
+            np.stack([-sy,   cy*sx,            cy*cx],            -1)
+        ], axis=-2)
+
+    # Reconstruct Covariance: Σ = R @ Λ @ R.T
+    # Stable calculation: scale columns of R by eigenvalues, then project
+    covs = (eigvecs * eigvals[:, None, :]) @ np.swapaxes(eigvecs, 1, 2)
+
+    return covs, eigvals, eigvecs
 
 
 def WarmUpScheduler(end_warm=500, end_iter=300000, curve="cosine", warmup_curve="linear", decay_start=None, decay_approach_curve="constant", min_val=0.0, max_val=1.0):

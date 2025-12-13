@@ -216,3 +216,13 @@ class SPNFExactFourierEncoding(FourierEncoding):
         exponent = exponent.tile(2)
 
         return x_nodownweight * exponent
+    
+class IdentityEncoding(nn.Module):
+    """
+    Identity encoding (no encoding).
+    """
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__()
+
+    def forward(self, X, *args, **kwargs):
+        return X

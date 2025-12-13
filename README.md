@@ -39,3 +39,17 @@ Outputs (checkpoints and visualizations) are written under `outputs/` by default
 - All tensors are normalized to `[-1, 1]`.
 - If no image path is provided, a procedural gradient is used for sanity checks.
 - Dependencies are minimal; no Docker or multi-GPU plumbing is included to keep the code base lean.
+
+
+## Useful commands 
+Command to convert videos to keynote friendly format:
+```bash
+ffmpeg -i ours_vis.mp4 \
+  -c:v libx265 \
+  -pix_fmt yuv420p \
+  -crf 15 \
+  -preset veryslow \
+  -tune grain \
+  -tag:v hvc1 \
+  output_vis.mov
+```

@@ -50,9 +50,13 @@ trainer:
   log_dir: ${paths.output_dir}/visualizations
   compile_train_step: true
   seed: 42
-  perturb_coords: gaussian
   covariance_eigenvalue_logrange: [-12.0, 2.0]
-
+  eval_resolution: 2048
+  mc_samples_train: 1
+  mc_samples_eval: dynamic
+  eval_min_mc_samples: 8
+  eval_max_mc_samples: 20480
+  perturb_kernel: gaussian
 
 # Tensorboard config
 tensorboard:

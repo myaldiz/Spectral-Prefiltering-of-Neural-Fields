@@ -143,3 +143,14 @@ def sample_ellipsoid_delta(q_matrix, eigenvalues):
     delta = torch.bmm(q_matrix, z_scaled)
     
     return delta.squeeze(-1)
+
+def get_deltas(q_matrix, eigenvalues, method='gaussian'):
+    """
+    Wrapper to get delta samples using specified method.
+    """
+    if method == 'gaussian':
+        return sample_gaussian_delta(q_matrix, eigenvalues)
+    elif method == 'uniform_ellipsoid':
+        return sample_ellipsoid_delta(q_matrix, eigenvalues)
+    else:
+        raise ValueError(f"Unknown sampling method: {method}")
