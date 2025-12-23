@@ -1,56 +1,35 @@
-#!/usr/bin/env python
-from __future__ import annotations
-
-from pathlib import Path
-
 import hydra
 import torch
-from omegaconf import DictConfig
+from pathlib import Path
+from omegaconf import OmegaConf
 
-from spnf.data import FieldBatchGenerator, GridField, MonteCarloField, load_image
-from spnf.model import ModelConfig
-from spnf.trainer import OptimConfig, TrainConfig, Trainer
+from spnf.trainer import Trainer
 
 
-@hydra.main(config_path="../configs", config_name="train", version_base="1.3")
-def main(cfg: DictConfig) -> None:
-    device = torch.device(cfg.train.device)
+@hydra.main(config_path="../spnf/configs", config_name="train", version_base=None)
+def main(cfg):
+    """
+    Main training script for SPNF.
+    """
+    print(OmegaConf.to_yaml(cfg, resolve=True))
 
-    image = load_image(cfg.data.image_path, device=device)
-    base_field = GridField(image, bounds=cfg.data.bounds, padding_mode=cfg.data.padding_mode)
-    field = MonteCarloField(base_field, samples=cfg.data.mc_samples) if cfg.data.mc_samples > 1 else base_field
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    data = FieldBatchGenerator(
-        field=field,
-        bounds=cfg.data.bounds,
-        log_scale_range=tuple(cfg.data.log_scale_range),
-        device=device,
-    )
+    # Instantiate the trainer
+    trainer = Trainer(cfg).to(device)
 
-    model_cfg = ModelConfig(
-        coords=cfg.model.coords,
-        fourier_features=cfg.model.fourier_features,
-        freq_std=cfg.model.freq_std,
-        hidden_dim=cfg.model.hidden_dim,
-        hidden_layers=cfg.model.hidden_layers,
-        output_dim=cfg.model.output_dim,
-    )
-    optim_cfg = OptimConfig(lr=cfg.optim.lr, weight_decay=cfg.optim.weight_decay)
-    train_cfg = TrainConfig(
-        steps=cfg.train.steps,
-        batch_size=cfg.train.batch_size,
-        eval_every=cfg.train.eval_every,
-        checkpoint_every=cfg.train.checkpoint_every,
-        eval_scale=cfg.train.eval_scale,
-        eval_resolution=cfg.train.eval_resolution,
-        checkpoint_dir=cfg.train.checkpoint_dir,
-        log_dir=cfg.train.log_dir,
-        seed=cfg.train.seed,
-        device=cfg.train.device,
-    )
-
-    trainer = Trainer(model_cfg, optim_cfg, train_cfg, data)
+    # Run the training
     trainer.fit()
+
+    # Create output directory for checkpoints
+    checkpoint_dir = Path(cfg.trainer.checkpoint_dir)
+    checkpoint_dir.mkdir(parents=True, exist_ok=True)
+
+    # Save the final model state
+    state_dict = trainer.state_dict()
+    checkpoint_path = checkpoint_dir / "final.pth"
+    torch.save(state_dict, str(checkpoint_path))
+    print(f"Saved final checkpoint to {checkpoint_path}")
 
 
 if __name__ == "__main__":
