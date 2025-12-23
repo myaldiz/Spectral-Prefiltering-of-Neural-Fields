@@ -75,8 +75,6 @@ booktitle = {Proceedings of the SIGGRAPH Asia 2025 Conference Papers},
 articleno = {87},
 numpages = {12},
 keywords = {neural fields, prefiltering, Fourier features, anti-aliasing, Gaussian, Lanczos},
-location = {
-},
 series = {SA Conference Papers '25}
 }
 ```
