@@ -4,16 +4,10 @@ This repository hosts a minimal, Hydra-driven implementation of the Spectral Pre
 
 ## Quickstart
 
-1.  **Install dependencies and the package in editable mode:**
-    ```bash
-    pip install -e .
-    ```
-
-2.  **Run training with default settings:**
-    ```bash
-    python scripts/train.py
-    ```
-    The default config trains on a small synthetic gradient image. Checkpoints and logs will be saved to a directory specified in `spnf/configs/train.yaml` under `hydra.run.dir`.
+```bash
+pip install -e .
+python scripts/train.py
+```
 
 ## Command-line Training
 
@@ -44,15 +38,6 @@ Training is fully driven by Hydra via `configs/train.yaml`. All parameters can b
 
 Outputs (checkpoints and visualizations) are written under `outputs/` by default.
 
-## Package Layout
-
-- `spnf/data.py`: image loading, grid-based field, optional Monte Carlo smoothing, and a batch generator.
-- `spnf/encoding.py`: spectral Fourier encoder with scale-aware attenuation.
-- `spnf/mlp.py`: small feed-forward network.
-- `spnf/model.py`: model definition and loss.
-- `spnf/trainer.py`: lightweight training loop with evaluation and PNG dumps.
-- `scripts/train.py`: Hydra entrypoint.
-
 ## Notes
 
 - All tensors are normalized to `[-1, 1]`.
@@ -71,4 +56,27 @@ ffmpeg -i ours_vis.mp4 \
   -tune grain \
   -tag:v hvc1 \
   output_vis.mov
+```
+
+## Citation
+If you find this code useful in your research, please consider citing:
+
+```
+@inproceedings{yaldiz2025spnf,
+author = {Yaldiz, Mustafa B. and Mehta, Ishit and Raghavan, Nithin and Meuleman, Andreas and Li, Tzu-Mao and Ramamoorthi, Ravi},
+title = {Spectral Prefiltering of Neural Fields},
+year = {2025},
+isbn = {9798400721373},
+publisher = {Association for Computing Machinery},
+address = {New York, NY, USA},
+url = {https://doi.org/10.1145/3757377.3763901},
+doi = {10.1145/3757377.3763901},
+booktitle = {Proceedings of the SIGGRAPH Asia 2025 Conference Papers},
+articleno = {87},
+numpages = {12},
+keywords = {neural fields, prefiltering, Fourier features, anti-aliasing, Gaussian, Lanczos},
+location = {
+},
+series = {SA Conference Papers '25}
+}
 ```
